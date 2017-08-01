@@ -55,9 +55,9 @@ int main(int argc, char* argv[])
 
 	int src_bpp=av_get_bits_per_pixel(av_pix_fmt_desc_get(src_pixfmt));
 
-	FILE *dst_file = fopen("sintel_1280x720_rgb24.rgb", "wb");
-	const int dst_w=1280,dst_h=720;
-	AVPixelFormat dst_pixfmt=AV_PIX_FMT_RGB24;
+	FILE *dst_file = fopen("sintel_480x272_rgb8.rgb", "wb");
+	const int dst_w= 480,dst_h= 272;
+	const AVPixelFormat dst_pixfmt= AV_PIX_FMT_BGR8;
 	int dst_bpp=av_get_bits_per_pixel(av_pix_fmt_desc_get(dst_pixfmt));
 
 	//Structures
@@ -158,9 +158,14 @@ int main(int argc, char* argv[])
 							  }
 		}
 		
-		sws_scale(img_convert_ctx, src_data, src_linesize, 0, src_h, dst_data, dst_linesize);
+		ret = sws_scale(img_convert_ctx, src_data, src_linesize, 0, src_h, dst_data, dst_linesize);
 		printf("Finish process frame %5d\n",frame_idx);
 		frame_idx++;
+
+		if (ret < 0)
+		{
+			printf("sws_scale error.\n");
+		}
 
 		switch(dst_pixfmt){
 		case AV_PIX_FMT_GRAY8:{
@@ -193,6 +198,11 @@ int main(int argc, char* argv[])
 			fwrite(dst_data[0],1,dst_w*dst_h*3,dst_file);               //Packed
 			break;
 							  }
+		case AV_PIX_FMT_BGR8:
+		{
+			fwrite(dst_data[0], 1, dst_w*dst_h, dst_file);
+			break;
+		}
 		default:{
 			printf("Not Support Output Pixel Format.\n");
 			break;
