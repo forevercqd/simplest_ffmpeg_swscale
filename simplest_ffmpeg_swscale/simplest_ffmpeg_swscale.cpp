@@ -46,17 +46,37 @@ extern "C"
 #endif
 
 
+#if 0
+char file_name[] = "sintel_480x272_yuv420p";
+const int in_w = 480;
+const int in_h = 272;                           //YUV's width and height
+#else
+char file_name[] = "E:\\study\\sample\\yuv\\XingQiuJueQi_16_BFrames_30s_1280x720";
+const int in_w = 1280;
+const int in_h = 720;                           //YUV's width and height
+#endif
+
+
 int main(int argc, char* argv[])
 {
 	//Parameters	
-	FILE *src_file =fopen("sintel_480x272_yuv420p.yuv", "rb");
-	const int src_w=480,src_h=272;
+	char in_file_name[100] = { 0 };
+	char out_file_name[100] = { 0 };
+	const int span_per_frame = 40;
+	sprintf(in_file_name, "%s.yuv", file_name);
+	sprintf(out_file_name, "%s.gbr8", file_name);
+
+
+	FILE *src_file =fopen(in_file_name, "rb");
+	const int src_w = in_w;
+	const int src_h = in_h;
 	AVPixelFormat src_pixfmt=AV_PIX_FMT_YUV420P;
 
 	int src_bpp=av_get_bits_per_pixel(av_pix_fmt_desc_get(src_pixfmt));
 
-	FILE *dst_file = fopen("sintel_480x272_rgb8.rgb", "wb");
-	const int dst_w= 480,dst_h= 272;
+	FILE *dst_file = fopen(out_file_name, "wb");
+	const int dst_w = in_w;
+	const int dst_h = in_h;
 	const AVPixelFormat dst_pixfmt= AV_PIX_FMT_BGR8;
 	int dst_bpp=av_get_bits_per_pixel(av_pix_fmt_desc_get(dst_pixfmt));
 
@@ -73,48 +93,22 @@ int main(int argc, char* argv[])
 	
 	int frame_idx=0;
 	int ret=0;
-	ret= av_image_alloc(src_data, src_linesize,src_w, src_h, src_pixfmt, 1);
+	ret= av_image_alloc(src_data, src_linesize,src_w, src_h, src_pixfmt, 4);
 	if (ret< 0) {
 		printf( "Could not allocate source image\n");
 		return -1;
 	}
-	ret = av_image_alloc(dst_data, dst_linesize,dst_w, dst_h, dst_pixfmt, 1);
+	ret = av_image_alloc(dst_data, dst_linesize,dst_w, dst_h, dst_pixfmt, 4);
 	if (ret< 0) {
 		printf( "Could not allocate destination image\n");
 		return -1;
 	}
-	//-----------------------------	
-	//Init Method 1
-	img_convert_ctx =sws_alloc_context();
-	//Show AVOption
-	av_opt_show2(img_convert_ctx,stdout,AV_OPT_FLAG_VIDEO_PARAM,0);
-	//Set Value
-	av_opt_set_int(img_convert_ctx,"sws_flags",SWS_BICUBIC|SWS_PRINT_INFO,0);
-	av_opt_set_int(img_convert_ctx,"srcw",src_w,0);
-	av_opt_set_int(img_convert_ctx,"srch",src_h,0);
-	av_opt_set_int(img_convert_ctx,"src_format",src_pixfmt,0);
-	//'0' for MPEG (Y:0-235);'1' for JPEG (Y:0-255)
-	av_opt_set_int(img_convert_ctx,"src_range",1,0);
-	av_opt_set_int(img_convert_ctx,"dstw",dst_w,0);
-	av_opt_set_int(img_convert_ctx,"dsth",dst_h,0);
-	av_opt_set_int(img_convert_ctx,"dst_format",dst_pixfmt,0);
-	av_opt_set_int(img_convert_ctx,"dst_range",1,0);
-	sws_init_context(img_convert_ctx,NULL,NULL);
 
 	//Init Method 2
-	//img_convert_ctx = sws_getContext(src_w, src_h,src_pixfmt, dst_w, dst_h, dst_pixfmt, 
-	//	rescale_method, NULL, NULL, NULL); 
-	//-----------------------------
-	/*
-	//Colorspace
-	ret=sws_setColorspaceDetails(img_convert_ctx,sws_getCoefficients(SWS_CS_ITU601),0,
-		sws_getCoefficients(SWS_CS_ITU709),0,
-		 0, 1 << 16, 1 << 16);
-	if (ret==-1) {
-		printf( "Colorspace not support.\n");
-		return -1;
-	}
-	*/
+	img_convert_ctx = sws_getContext(src_w, src_h,src_pixfmt, dst_w, dst_h, dst_pixfmt, 
+		rescale_method, NULL, NULL, NULL); 
+
+
 	while(1)
 	{
 		if (fread(temp_buffer, 1, src_w*src_h*src_bpp/8, src_file) != src_w*src_h*src_bpp/8){
